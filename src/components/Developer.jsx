@@ -9,7 +9,7 @@ import { useGraph } from '@react-three/fiber';
 import { useAnimations, useFBX, useGLTF } from '@react-three/drei';
 import { SkeletonUtils } from 'three-stdlib';
 
-const Developer = ({ animationName = 'clapping', ...props }) => {
+const Developer = ({ animationName = 'idle', ...props }) => {
   const group = useRef();
 
   const { scene } = useGLTF('/models/animations/developer.glb');
@@ -26,18 +26,32 @@ const Developer = ({ animationName = 'clapping', ...props }) => {
   clappingAnimation[0].name = 'clapping';
   victoryAnimation[0].name = 'victory';
 
-  const { actions } = useAnimations(
-    [idleAnimation[0], saluteAnimation[0], clappingAnimation[0], victoryAnimation[0]],
-    group,
-  );
+  // Helper function to filter out invalid tracks
+  const filterInvalidTracks = (animations) => {
+    animations.forEach((clip) => {
+      clip.tracks = clip.tracks.filter((track) => {
+        const nodeName = track.name.split('.')[0];
+        return nodes[nodeName] !== undefined; // Filter out tracks with missing nodes
+      });
+    });
+    return animations;
+  };
 
-  useEffect(() => {
-    if (actions[animationName]) {
-      actions[animationName].reset().fadeIn(0.5).play();
-    }
-    return () => actions[animationName]?.fadeOut(0.5);
-  }, [actions, animationName]);
 
+   // Apply filtering
+   filterInvalidTracks([idleAnimation[0], saluteAnimation[0], clappingAnimation[0], victoryAnimation[0]]);
+
+   const { actions } = useAnimations(
+     [idleAnimation[0], saluteAnimation[0], clappingAnimation[0], victoryAnimation[0]],
+     group
+   );
+
+   useEffect(() => {
+     if (actions[animationName]) {
+       actions[animationName].reset().fadeIn(0.5).play();
+     }
+     return () => actions[animationName]?.fadeOut(0.5);
+   }, [actions, animationName]);
 
   return (
     <group ref={group} {...props} dispose={null}>
